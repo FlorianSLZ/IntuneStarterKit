@@ -1,0 +1,5 @@
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration
+ClientCulture -eq "en-gb"
+
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Office\ClickToRun\Configuration
+SharedComputerLicensing -eq 0
