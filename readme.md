@@ -9,9 +9,9 @@ You will habe an Autopilot Profile, some basisc WIndows & Security Settings as w
 
 ## Installing the module from PSGallery
 
-The IntuneWin32App module is published to the [PowerShell Gallery](https://www.powershellgallery.com/packages/IntuneStarterKit). Install it on your system by running the following in an elevated PowerShell console:
+The IntuneStarterKit module is published to the [PowerShell Gallery](https://www.powershellgallery.com/packages/IntuneStarterKit). Install it on your system by running the following in an elevated PowerShell console:
 ```PowerShell
-Install-Module -Name xxxx
+Install-Module -Name IntuneStarterKit
 ```
 
 ## Import the module for testing
@@ -26,7 +26,8 @@ Import-Module -Name "C:\GitHub\IntuneStarterKit\Module\IntuneStarterKit" -Verbos
 
 IntuneStarterKit module requires the following modules, which will be automatically installed as dependencies:
 - Microsoft.Graph.Authentification
-- xxxx
+- IntuneBackupAndRestore
+- IntuneWin32App
 
 # Functions / Examples
 
