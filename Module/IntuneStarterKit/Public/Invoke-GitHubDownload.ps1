@@ -65,8 +65,7 @@ function Invoke-GitHubDownload {
     foreach ($file in $files) {
         $fileDestination = Join-Path $DestinationPath (Split-Path $file -Leaf)
         try {
-            Invoke-WebRequest -Uri $file -OutFile $fileDestination -ErrorAction Stop -Verbose
-            "Grabbed '$($file)' to '$fileDestination'"
+            Invoke-WebRequest -Uri $file -OutFile $fileDestination -ErrorAction Stop
         } catch {
             throw "Unable to download '$($file.path)'"
         }

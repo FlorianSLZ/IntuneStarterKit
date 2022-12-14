@@ -42,7 +42,7 @@ function Add-ISKAPProfile {
 
         [parameter(Mandatory = $false, HelpMessage = "ID of the Autopilot Profile")]
         [ValidateNotNullOrEmpty()]
-        [string]$description = "Profile created with the IntuneStarterKit",
+        [string]$description = "Profile created with the IntuneStarterKit"
 
     )
 
@@ -62,7 +62,7 @@ function Add-ISKAPProfile {
         }
         
 
-        
+    
 $json_ap = @"
 {
     "@odata.type": "#microsoft.graph.azureADWindowsAutopilotDeploymentProfile",

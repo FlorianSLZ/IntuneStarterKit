@@ -33,20 +33,28 @@ function Add-ISKConfiguration {
             $RepoPath = $($Path.Replace("https://github.com/$Owner/$Repository/tree/main/",""))
 
             Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $RepoPath -DestinationPath $DestinationPath
+            $PathLocal = $DestinationPath
 
         }else{
-            # check path
+            if(Test-Path $Path){
+                Write-Verbose "Found path: $Path"
+                $PathLocal = $Path
+            }else{
+                Write-Error "Path not found: $Path"
+                break
+            }
         }
 
     
-    
+        
         # Configurations Restore
-        Invoke-IntuneRestoreDeviceCompliancePolicy -Path $DestinationPath # Basic Requirements
-        Invoke-IntuneRestoreDeviceConfiguration -Path $DestinationPath
-        Invoke-IntuneRestoreDeviceManagementIntent -Path $DestinationPath # Defender, Firewall und Bitloker
-        Invoke-IntuneRestoreDeviceManagementScript -Path $DestinationPath # PowerShell Scripte
-        Invoke-IntuneRestoreGroupPolicyConfiguration -Path $DestinationPath
-        Invoke-IntuneRestoreConfigurationPolicy -Path $DestinationPath # Settings Catalog
+        Connect-MSGraph -Quiet
+        Invoke-IntuneRestoreDeviceCompliancePolicy -Path $PathLocal # Basic Requirements
+        Invoke-IntuneRestoreDeviceConfiguration -Path $PathLocal
+        Invoke-IntuneRestoreDeviceManagementIntent -Path $PathLocal # Defender, Firewall und Bitloker
+        Invoke-IntuneRestoreDeviceManagementScript -Path $PathLocal # PowerShell Scripte
+        Invoke-IntuneRestoreGroupPolicyConfiguration -Path $PathLocal
+        Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal # Settings Catalog
 
     }catch{
         Write-Error $_
