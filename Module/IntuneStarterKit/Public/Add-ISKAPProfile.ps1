@@ -50,7 +50,6 @@ function Add-ISKAPProfile {
 
         # Get current Profiles
         Write-Verbose "Checking for Profile with Name: $Name"
-
         $uri = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeploymentProfiles?`$filter=displayName eq '$Name'"
         $Method = "GET"
         $APProfile = (Invoke-MgGraphRequest -Method $Method -uri $uri).value.displayName

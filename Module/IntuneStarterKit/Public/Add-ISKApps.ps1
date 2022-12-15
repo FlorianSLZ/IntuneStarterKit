@@ -52,7 +52,17 @@ function Add-ISKApps {
             }
         } 
         
-    
+        # Get TenantID
+        Write-Verbose "Get Tenant ID"
+        $uri = "https://graph.microsoft.com/v1.0/organization"
+        $Method = "GET"
+        $TenantID = (Invoke-MgGraphRequest -Method $Method -uri $uri).value.id
+        
+        # Connect to Intune
+        Write-Verbose "Connect to MS Intune ENviroment via Connect-MSIntuneGraph"
+        Connect-MSIntuneGraph -TenantID $TenantID
+
+
         $AllAppFolders = Get-ChildItem $PathLocal 
     
         foreach($AppFolder in $AllAppFolders){
@@ -60,7 +70,7 @@ function Add-ISKApps {
             $IntuneWinFile = (Get-ChildItem $AppFolder.FullName -Filter "*.intunewin").FullName
     
             # Create requirement rule for all platforms and Windows 10 2004
-            $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture "x64" -MinimumSupportedOperatingSystem "1903"
+            $RequirementRule = New-IntuneWin32AppRequirementRule -Architecture "x64" -MinimumSupportedWindowsRelease "2004"
     
             # Create PowerShell script detection rule
             $DetectionScriptFile = (Get-ChildItem $AppFolder.FullName -Filter "check.ps1").FullName
