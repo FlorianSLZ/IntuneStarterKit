@@ -21,7 +21,11 @@ function Add-ISKConfiguration {
         
         [parameter(Mandatory = $false, HelpMessage = "Path where online files will be stored")]
         [ValidateNotNullOrEmpty()]
-        [string]$DestinationPath = "$env:temp\IntuneStarterKit\Config\"
+        [string]$DestinationPath = "$env:temp\IntuneStarterKit\Config\",
+
+        [parameter(Mandatory = $false, HelpMessage = "Assign configuration to group with specified ID")]
+        [ValidateNotNullOrEmpty()]
+        [string]$AssignTo
     )
 
 
@@ -49,12 +53,39 @@ function Add-ISKConfiguration {
         
         # Configurations Restore
         Connect-MSGraph -Quiet
-        Invoke-IntuneRestoreDeviceCompliancePolicy -Path $PathLocal # Basic Requirements
+        Invoke-IntuneRestoreDeviceCompliancePolicy -Path $PathLocal 
         Invoke-IntuneRestoreDeviceConfiguration -Path $PathLocal
-        Invoke-IntuneRestoreDeviceManagementIntent -Path $PathLocal # Defender, Firewall und Bitloker
-        Invoke-IntuneRestoreDeviceManagementScript -Path $PathLocal # PowerShell Scripte
+        Invoke-IntuneRestoreDeviceManagementIntent -Path $PathLocal 
+        Invoke-IntuneRestoreDeviceManagementScript -Path $PathLocal
         Invoke-IntuneRestoreGroupPolicyConfiguration -Path $PathLocal
-        Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal # Settings Catalog
+        Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal
+
+        if($AssignTo){
+            foreach($Configuration in $AllConfigs){
+            
+                Write-Verbose "Assign configuration to:"
+                Write-Verbose "Add Member to $GroupName, Member ID: $Member"
+                $Method = "POST"
+                $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations/$Configuration/assign"
+                $ConfPolAssign = "$Configuration" + "_" + "$AssignTo"
+                $JSON = @"
+     
+    {
+        "deviceConfigurationGroupAssignments": [
+            {
+                "@odata.type": "#microsoft.graph.deviceConfigurationGroupAssignment",
+                "id": "$ConfPolAssign",
+                "targetGroupId": "$AssignTo"
+            }
+        ]
+    }
+"@
+
+
+                $AssignConfigRespond = Invoke-MgGraphRequest -Method $Method -uri $uri -Body $JSON
+                Write-Verbose $AssignConfigRespond
+            }
+        }
 
     }catch{
         Write-Error $_
