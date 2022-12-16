@@ -42,11 +42,11 @@ function Invoke-GitHubDownload {
     )
 
     $baseUri = "https://api.github.com/"
-    $args = "repos/$Owner/$Repository/contents/$Path"
-    $wr = Invoke-WebRequest -Uri $($baseuri+$args)
+    $RepoArgs = "repos/$Owner/$Repository/contents/$Path"
+    $wr = Invoke-WebRequest -Uri $($baseuri+$RepoArgs)
     $objects = $wr.Content | ConvertFrom-Json
-    $files = $objects | where {$_.type -eq "file"} | Select -exp download_url
-    $directories = $objects | where {$_.type -eq "dir"}
+    $files = $objects | Where-Object {$_.type -eq "file"} | Select-Object -exp download_url
+    $directories = $objects | Where-Object {$_.type -eq "dir"}
     
     $directories | ForEach-Object { 
         Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $_.path -DestinationPath $($DestinationPath+$_.name)
@@ -62,10 +62,13 @@ function Invoke-GitHubDownload {
         }
     }
 
+    $wc = New-Object net.webclient
+
     foreach ($file in $files) {
         $fileDestination = Join-Path $DestinationPath (Split-Path $file -Leaf)
         try {
-            Invoke-WebRequest -Uri $file -OutFile $fileDestination -ErrorAction Stop
+            #Invoke-WebRequest -Uri $file -OutFile $fileDestination -ErrorAction Stop
+            $wc.Downloadfile($file, $fileDestination)
         } catch {
             throw "Unable to download '$($file.path)'"
         }
