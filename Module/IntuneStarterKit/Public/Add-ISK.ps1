@@ -17,6 +17,10 @@ function Add-ISK {
         [ValidateNotNullOrEmpty()]
         [string]$APGroupName = "DEV-WIN-Autopilot",
 
+        [parameter(Mandatory = $false, HelpMessage = "Name of the group which contains all Autopilot devices")]
+        [ValidateNotNullOrEmpty()]
+        [string]$StdGroupName = "DEV-WIN-Standard",
+
         [parameter(Mandatory = $false, HelpMessage = "Language of the AP Profile")]
         [ValidateNotNullOrEmpty()]
         [string]$Language = "de-CH"
@@ -27,7 +31,7 @@ function Add-ISK {
     try{
         Write-Verbose "Calling Add-ISKAPGroup for basic Groups ..."
         $APGroup = Add-ISKGroup -GroupName $APGroupName -GroupDescription "Group containing all Autopilot registered devices" -GroupType "DynamicMembership" -GroupRule "(device.devicePhysicalIds -any _ -eq ""[OrderID]:$OrderID"")"
-        #Add-ISKGroup -GroupName "DEV-WIN-Standard" -GroupDescription "Group for standard policies and applications" -GroupRule ""
+        #$StdGroup = Add-ISKGroup -GroupName $StdGroupName -GroupDescription "Group for standard policies and applications" -Members $APGroup
 
         Write-Verbose "Calling Add-ISKAPProfile ..."
         Add-ISKAPProfile -AssignTo $APGroup -Language $Language
@@ -36,10 +40,10 @@ function Add-ISK {
         Add-ISKESP -AssignTo $APGroup
 
         Write-Verbose "Calling Add-ISKConfiguration ..."
-        Add-ISKConfiguration -Path "https://github.com/FlorianSLZ/IntuneStarterKit/tree/main/Samples/Configuration"
+        Add-ISKConfiguration -AssignTo $APGroup
 
         Write-Verbose "Calling Add-ISKApps ..."
-        Add-ISKApps -Path "https://github.com/FlorianSLZ/IntuneStarterKit/tree/main/Samples/Apps"
+        Add-ISKApps -AssignTo $APGroup
 
     }catch{
         Write-Error $_

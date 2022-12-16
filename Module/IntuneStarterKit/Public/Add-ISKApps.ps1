@@ -18,7 +18,7 @@ function Add-ISKApps {
     param (
         [parameter(Mandatory = $false, HelpMessage = "Path to the installwin(s)")]
         [ValidateNotNullOrEmpty()]
-        [string]$Path,
+        [string]$Path = "https://github.com/FlorianSLZ/IntuneStarterKit/tree/main/Samples/Apps",
 
         [parameter(Mandatory = $false, HelpMessage = "App publisher")]
         [ValidateNotNullOrEmpty()]
@@ -26,7 +26,11 @@ function Add-ISKApps {
 
         [parameter(Mandatory = $false, HelpMessage = "Path where online files will be stored")]
         [ValidateNotNullOrEmpty()]
-        [string]$DestinationPath = "$env:temp\IntuneStarterKit\Apps\"
+        [string]$DestinationPath = "$env:temp\IntuneStarterKit\Apps\",
+
+        [parameter(Mandatory = $false, HelpMessage = "Assign configuration to group with specified ID")]
+        [ValidateNotNullOrEmpty()]
+        [string]$AssignTo
 
     )
 
@@ -52,16 +56,24 @@ function Add-ISKApps {
             }
         } 
         
-        # Get TenantID
+        <# Get TenantID
         Write-Verbose "Get Tenant ID"
         $uri = "https://graph.microsoft.com/v1.0/organization"
         $Method = "GET"
         $TenantID = (Invoke-MgGraphRequest -Method $Method -uri $uri).value.id
+        #>
         
-        # Connect to Intune
-        Write-Verbose "Connect to MS Intune ENviroment via Connect-MSIntuneGraph"
-        Connect-MSIntuneGraph -TenantID $TenantID
+        # Create Acces Token for MSIntuneGraph
+        Write-Verbose "Connect to MS Intune Enviroment via Connect-MSIntuneGraph"
+        $Current_MgContext = Get-MgContext
+        $Global:AccessToken = Get-MsalToken -ClientID $Current_MgContext.ClientId -TenantId $Current_MgContext.TenantId
 
+        $Global:AuthenticationHeader = @{
+                    "Content-Type" = "application/json"
+                    "Authorization" = $AccessToken.CreateAuthorizationHeader()
+                    "ExpiresOn" = $AccessToken.ExpiresOn.LocalDateTime
+                }
+        Write-Verbose $Global:AuthenticationHeader
 
         $AllAppFolders = Get-ChildItem $PathLocal 
     
@@ -80,8 +92,12 @@ function Add-ISKApps {
             $InstallPS1 = (Get-ChildItem $AppFolder.FullName -Filter "*.intunewin").Name -replace(".intunewin","")
             $InstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\$InstallPS1.ps1"
             $UninstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\uninstall.ps1"
-            Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
-    
+            $AppUpload = Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
+            Write-Verbose $AppUpload
+
+            if($AssignTo){
+                Add-IntuneWin32AppAssignmentGroup -Include -ID $AppUpload.id -GroupID $AssignTo -Intent "required" -Notification "showAll" -Verbose
+            }
         }
 
     }catch{

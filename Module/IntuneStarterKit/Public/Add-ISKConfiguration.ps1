@@ -51,20 +51,23 @@ function Add-ISKConfiguration {
 
     
         
-        # Configurations Restore
+        # Connect
         Connect-MSGraph -Quiet
-        Invoke-IntuneRestoreDeviceCompliancePolicy -Path $PathLocal 
-        Invoke-IntuneRestoreDeviceConfiguration -Path $PathLocal
-        Invoke-IntuneRestoreDeviceManagementIntent -Path $PathLocal 
-        Invoke-IntuneRestoreDeviceManagementScript -Path $PathLocal
-        Invoke-IntuneRestoreGroupPolicyConfiguration -Path $PathLocal
-        Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal
+
+        # Configurations Restore
+        $DeviceConfiguration = Invoke-IntuneRestoreDeviceConfiguration -Path $PathLocal
+        $DeviceCompliancePolicy = Invoke-IntuneRestoreDeviceCompliancePolicy -Path $PathLocal 
+        # $DeviceManagementIntent = Invoke-IntuneRestoreDeviceManagementIntent -Path $PathLocal 
+        $DeviceManagementScript = Invoke-IntuneRestoreDeviceManagementScript -Path $PathLocal
+        # $GroupPolicyConfiguration = Invoke-IntuneRestoreGroupPolicyConfiguration -Path $PathLocal
+        $ConfigurationPolicy = Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal
 
         if($AssignTo){
-            foreach($Configuration in $AllConfigs){
+            foreach($Configuration in $DeviceConfiguration){
             
                 Write-Verbose "Assign configuration to:"
-                Write-Verbose "Add Member to $GroupName, Member ID: $Member"
+                $deviceConfigurationObj = Get-DeviceManagement_DeviceConfigurations | Get-MSGraphAllPages | Where-Object displayName -eq "$($deviceConfiguration.BaseName)"
+                Write-Verbose "Add Member to $($deviceConfigurationObj.id), Member ID: $AssignTo"
                 $Method = "POST"
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations/$Configuration/assign"
                 $ConfPolAssign = "$Configuration" + "_" + "$AssignTo"
