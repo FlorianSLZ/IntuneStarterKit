@@ -68,7 +68,7 @@ function Add-ISKConfiguration {
             foreach($Configuration in $DeviceConfiguration){
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations?`$filter=displayName%20eq%20'$($Configuration.Name)'"
                 $Method = "GET"     
-                $ConfigId = (Invoke-MgGraphRequest -Method $Method -uri $uri ).value.id
+                $ConfigId = (Invoke-PagingRequest -Method $Method -uri $uri).id
 
                 if($ConfigId.count -eq 1){
                     Add-DeviceConfigurationPolicyAssignment -ConfigurationPolicyId $ConfigId -TargetGroupId $AssignTo -AssignmentType Included
@@ -81,28 +81,54 @@ function Add-ISKConfiguration {
             foreach($Configuration in $DeviceCompliancePolicy){
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$filter=displayName%20eq%20'$($Configuration.Name)'"
                 $Method = "GET"     
-                $ConfigId = (Invoke-MgGraphRequest -Method $Method -uri $uri ).value.id
+                $ConfigId = (Invoke-PagingRequest -Method $Method -uri $uri).id
 
                 if($ConfigId.count -eq 1){
                     Add-DeviceCompliancePolicyAssignment -CompliancePolicyId $ConfigId -TargetGroupId $AssignTo
                 }else{
-                    Write-Warning "There are multiple policies with the same name, please clean them up first: $($Configuration.Name)" 
+                    Write-Warning "There are multiple compliance policies with the same name, please clean them up first: $($Configuration.Name)" 
                 }
 
                 
             }
 
             # Assign Device Device Management Script
-            foreach($Configuration in $DeviceManagementScript){
+            foreach($Script in $DeviceManagementScript){ 
+                $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts?`$filter=displayName%20eq%20'$($Script.Name)'"
+                $Method = "GET"     
+                $ScriptId = (Invoke-PagingRequest -Method $Method -uri $uri).id
+
+                if($ScriptId.count -eq 1){
+                    Add-DeviceManagementScriptAssignment -ScriptId $ScriptId -TargetGroupId $AssignTo
+                }else{
+                    Write-Warning "There are multiple scripts with the same name, please clean them up first: $($Script.Name)" 
+                }
 
             }
 
             # Assign Configuration Policy (Settings catalog)
             foreach($Configuration in $ConfigurationPolicy){
+                $SCName = $($Configuration.path.replace('Settings Catalog\','')).replace('.json','')
+                $uri = "https://graph.microsoft.com/beta/deviceManagement/configurationPolicies?`$filter=name%20eq%20'$($SCName)'"
+                $Method = "GET"     
+                $ConfigId = (Invoke-PagingRequest -Method $Method -uri $uri).id
+
+                if($ConfigId.count -eq 1){
+                    Add-ConfigurationPolicyAssignment -ConfigurationPolicyId $ConfigId -TargetGroupId $AssignTo -AssignmentType Included
+                }else{
+                    Write-Warning "There are multiple policies with the same name, please clean them up first: $($SCName)" 
+                }
+
 
             }
 
         }
+
+        Write-Host "Configuration imported:" -ForegroundColor Green
+        $DeviceConfiguration
+        $DeviceCompliancePolicy
+        $DeviceManagementScript
+        $ConfigurationPolicy
 
     }catch{
         Write-Error $_

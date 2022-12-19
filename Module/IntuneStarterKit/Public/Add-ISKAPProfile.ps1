@@ -119,6 +119,8 @@ $json_ap = @"
         $MgRequest = Invoke-MgGraphRequest -Uri $uri -Method $Method -Body $Assignment_Body
         Write-Verbose $MgRequest
 
+        Write-Host "Autopilot profile created: $Name" -ForegroundColor Green
+
     }catch{
         Write-Error $_
     }

@@ -100,6 +100,9 @@ function Add-ISKApps {
             }
         }
 
+        Write-Host "Apps imported and assigned: " -ForegroundColor Green
+        $($AllAppFolders.Name)
+
     }catch{
         Write-Error $_
     }

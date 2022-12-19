@@ -89,6 +89,8 @@ $json_assigment = @"
 
         $MgRequest = Invoke-MgGraphRequest -Method $Method -uri $uri -Body $json_assigment 
 
+        Write-Host "Enrollment Status Page (ESP) profile created: $Name" -ForegroundColor Green
+
     }catch{
         Write-Error $_
     }
