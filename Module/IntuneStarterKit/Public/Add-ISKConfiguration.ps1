@@ -52,7 +52,7 @@ function Add-ISKConfiguration {
     
         
         # Connect
-        Connect-MSGraph -Quiet
+        Connect-MSGraph -Quiet 
 
         # Configurations Restore
         $DeviceConfiguration = Invoke-IntuneRestoreDeviceConfiguration -Path $PathLocal
@@ -63,31 +63,45 @@ function Add-ISKConfiguration {
         $ConfigurationPolicy = Invoke-IntuneRestoreConfigurationPolicy -Path $PathLocal
 
         if($AssignTo){
+
+            # Assign Device Configuration
             foreach($Configuration in $DeviceConfiguration){
-            
-                Write-Verbose "Assign configuration to:"
-                $deviceConfigurationObj = Get-DeviceManagement_DeviceConfigurations | Get-MSGraphAllPages | Where-Object displayName -eq "$($deviceConfiguration.BaseName)"
-                Write-Verbose "Add Member to $($deviceConfigurationObj.id), Member ID: $AssignTo"
-                $Method = "POST"
-                $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations/$Configuration/assign"
-                $ConfPolAssign = "$Configuration" + "_" + "$AssignTo"
-                $JSON = @"
-     
-    {
-        "deviceConfigurationGroupAssignments": [
-            {
-                "@odata.type": "#microsoft.graph.deviceConfigurationGroupAssignment",
-                "id": "$ConfPolAssign",
-                "targetGroupId": "$AssignTo"
-            }
-        ]
-    }
-"@
+                $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations?`$filter=displayName%20eq%20'$($Configuration.Name)'"
+                $Method = "GET"     
+                $ConfigId = (Invoke-MgGraphRequest -Method $Method -uri $uri ).value.id
 
-
-                $AssignConfigRespond = Invoke-MgGraphRequest -Method $Method -uri $uri -Body $JSON
-                Write-Verbose $AssignConfigRespond
+                if($ConfigId.count -eq 1){
+                    Add-DeviceConfigurationPolicyAssignment -ConfigurationPolicyId $ConfigId -TargetGroupId $AssignTo -AssignmentType Included
+                }else{
+                    Write-Warning "There are multiple policies with the same name, please clean them up first: $($Configuration.Name)" 
+                }
             }
+
+            # Assign Device Compliance Policy
+            foreach($Configuration in $DeviceCompliancePolicy){
+                $uri = "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies?`$filter=displayName%20eq%20'$($Configuration.Name)'"
+                $Method = "GET"     
+                $ConfigId = (Invoke-MgGraphRequest -Method $Method -uri $uri ).value.id
+
+                if($ConfigId.count -eq 1){
+                    Add-DeviceCompliancePolicyAssignment -CompliancePolicyId $ConfigId -TargetGroupId $AssignTo
+                }else{
+                    Write-Warning "There are multiple policies with the same name, please clean them up first: $($Configuration.Name)" 
+                }
+
+                
+            }
+
+            # Assign Device Device Management Script
+            foreach($Configuration in $DeviceManagementScript){
+
+            }
+
+            # Assign Configuration Policy (Settings catalog)
+            foreach($Configuration in $ConfigurationPolicy){
+
+            }
+
         }
 
     }catch{

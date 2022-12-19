@@ -16,7 +16,7 @@ function Add-ISKAPProfile {
         Langegae of the Profile, eg. de-CH
 
     .PARAMETER userType
-        User Type of the primary USer (standard or administrator)
+        User Type of the primary user (standard or administrator)
 
     .PARAMETER description
         Description of the Autopilot profile
@@ -28,21 +28,25 @@ function Add-ISKAPProfile {
         [ValidateNotNullOrEmpty()]
         [string]$Name = "Default ISK Profile",
 
-        [parameter(Mandatory = $false, HelpMessage = "ID of the Autopilot Profile")]
+        [parameter(Mandatory = $false, HelpMessage = "GroupID to assign the Autopilot Profile to")]
         [ValidateNotNullOrEmpty()]
         [string]$AssignTo,
 
-        [parameter(Mandatory = $false, HelpMessage = "ID of the Autopilot Profile")]
+        [parameter(Mandatory = $false, HelpMessage = "Language of the Autopilot Profile")]
         [ValidateNotNullOrEmpty()]
         [string]$Language = "de-CH",
 
-        [parameter(Mandatory = $false, HelpMessage = "ID of the Autopilot Profile")]
+        [parameter(Mandatory = $false, HelpMessage = "Autopilot Profile usertype: Standard or Administartor")]
         [ValidateNotNullOrEmpty()]
         [string]$userType = "standard",
 
-        [parameter(Mandatory = $false, HelpMessage = "ID of the Autopilot Profile")]
+        [parameter(Mandatory = $false, HelpMessage = "Description of the Autopilot Profile")]
         [ValidateNotNullOrEmpty()]
-        [string]$description = "Profile created with the IntuneStarterKit"
+        [string]$description = "Profile created with the IntuneStarterKit",
+
+        [parameter(Mandatory = $false, HelpMessage = "Force creation of new Profile, regardless if ther es already one with the specified name")]
+        [ValidateNotNullOrEmpty()]
+        [switch]$Force
 
     )
 
@@ -56,8 +60,11 @@ function Add-ISKAPProfile {
         Write-Verbose "  found: $APProfile"
 
         if($APProfile -eq $Name){
-            Write-Error "Profile with the Name $Name alreade exists. To overrwite use -Force"
-            break  
+            if(!$Force){
+                Write-Warning "Profile with the Name $Name alreade exists. To add anyway use -Force"
+                break  
+            }
+            
         }
         
 
