@@ -62,7 +62,6 @@ function Add-ISKAPProfile {
         if($APProfile -eq $Name){
             if(!$Force){
                 Write-Warning "Profile with the Name $Name alreade exists. To add anyway use -Force"
-                break  
             }
             
         }

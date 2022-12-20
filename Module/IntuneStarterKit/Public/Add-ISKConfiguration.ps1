@@ -36,7 +36,7 @@ function Add-ISKConfiguration {
             $Repository = $($Path.Replace("https://github.com/$Owner/","")).Split("/")[0]
             $RepoPath = $($Path.Replace("https://github.com/$Owner/$Repository/tree/main/",""))
 
-            Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $RepoPath -DestinationPath $DestinationPath
+            Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $RepoPath -DestinationPath $DestinationPath | Out-Null
             $PathLocal = $DestinationPath
 
         }else{
@@ -125,10 +125,10 @@ function Add-ISKConfiguration {
         }
 
         Write-Host "Configuration imported:" -ForegroundColor Green
-        $DeviceConfiguration
-        $DeviceCompliancePolicy
-        $DeviceManagementScript
-        $ConfigurationPolicy
+        $DeviceConfiguration.Name
+        $DeviceCompliancePolicy.Name
+        $DeviceManagementScript.Name
+        $($ConfigurationPolicy.path.replace('Settings Catalog\','')).replace('.json','')
 
     }catch{
         Write-Error $_

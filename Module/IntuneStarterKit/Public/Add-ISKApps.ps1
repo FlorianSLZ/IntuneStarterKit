@@ -7,16 +7,28 @@ function Add-ISKApps {
         Connect to the MSGraph
         
     .PARAMETER Path
-        Path to the installwin(s)
+        Path to the installwin(s), local or online
 
     .PARAMETER Publisher
         App publisher
+
+    .PARAMETER DestinationPath
+        Path where online files will be stored
+
+    .PARAMETER AssignTo
+        Assign configuration to group with specified ID
+
+    .PARAMETER AppGroup
+        If set, a install group will be added per app
+
+    .PARAMETER AppGroupPrefix
+        Prefix for the apps install group (if -AppGroup in in place)
 
 
     #>
 
     param (
-        [parameter(Mandatory = $false, HelpMessage = "Path to the installwin(s)")]
+        [parameter(Mandatory = $false, HelpMessage = "Path to the installwin(s), local or online")]
         [ValidateNotNullOrEmpty()]
         [string]$Path = "https://github.com/FlorianSLZ/IntuneStarterKit/tree/main/Samples/Apps",
 
@@ -30,7 +42,15 @@ function Add-ISKApps {
 
         [parameter(Mandatory = $false, HelpMessage = "Assign configuration to group with specified ID")]
         [ValidateNotNullOrEmpty()]
-        [string]$AssignTo
+        [string]$AssignTo,
+
+        [parameter(Mandatory = $false, HelpMessage = "If set, a install group will be added per app")]
+        [ValidateNotNullOrEmpty()]
+        [switch]$AppGroup, 
+
+        [parameter(Mandatory = $false, HelpMessage = "Prefix for the apps install group (if -AppGroup in in place)")]
+        [ValidateNotNullOrEmpty()]
+        [string]$AppGroupPrefix = "APP-WIN-" 
 
     )
 
@@ -43,7 +63,7 @@ function Add-ISKApps {
             $Repository = $($Path.Replace("https://github.com/$Owner/","")).Split("/")[0]
             $RepoPath = $($Path.Replace("https://github.com/$Owner/$Repository/tree/main/",""))
 
-            Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $RepoPath -DestinationPath $DestinationPath
+            Invoke-GitHubDownload -Owner $Owner -Repository $Repository -Path $RepoPath -DestinationPath $DestinationPath | Out-Null
             $PathLocal = $DestinationPath
 
         }else{
@@ -73,8 +93,10 @@ function Add-ISKApps {
                     "Authorization" = $AccessToken.CreateAuthorizationHeader()
                     "ExpiresOn" = $AccessToken.ExpiresOn.LocalDateTime
                 }
-        Write-Verbose $Global:AuthenticationHeader
+        Write-Verbose $Global:AuthenticationHeader 
+        
 
+            
         $AllAppFolders = Get-ChildItem $PathLocal 
     
         foreach($AppFolder in $AllAppFolders){
@@ -95,12 +117,22 @@ function Add-ISKApps {
             $AppUpload = Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
             Write-Verbose $AppUpload
 
-            if($AssignTo){
-                Add-IntuneWin32AppAssignmentGroup -Include -ID $AppUpload.id -GroupID $AssignTo -Intent "required" -Notification "showAll" -Verbose
+            if($AppGroup){
+                $AppGrpName = "$AppGroupPrefix$($AppFolder.Name.replace(' ',''))"
+                $AppGroupObj = New-MgGroup -DisplayName $AppGrpName -Description "Installation of win32 app $($AppFolder.Name)" -MailEnabled:$false -SecurityEnabled:$true -MailNickname $($AppFolder.Name.replace(' ',''))
+
+                $AppAssigmentRequest = Add-IntuneWin32AppAssignmentGroup -Include -ID $AppUpload.id -GroupID $AppGroupObj.id -Intent "required" -Notification "showAll" 
+                Write-Verbose $AppAssigmentRequest
+                if($AssignTo){
+                    New-MgGroupMember -GroupId $AppGroupObj.id -DirectoryObjectId $AssignTo
+                }
+            }elseif($AssignTo){
+                $AppAssigmentRequest = Add-IntuneWin32AppAssignmentGroup -Include -ID $AppUpload.id -GroupID $AssignTo -Intent "required" -Notification "showAll"
+                Write-Verbose $AppAssigmentRequest
             }
         }
 
-        Write-Host "Apps imported and assigned: " -ForegroundColor Green
+        Write-Host "Apps imported: " -ForegroundColor Green
         $($AllAppFolders.Name)
 
     }catch{
