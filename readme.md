@@ -14,7 +14,6 @@ You will habe an Autopilot Profile, some basisc Windows & Security Settings as w
 The IntuneStarterKit module is published to the [PowerShell Gallery](https://www.powershellgallery.com/packages/IntuneStarterKit). Install it on your system by running the following in an elevated PowerShell console:
 ```PowerShell
 Install-Module -Name IntuneStarterKit
-Install-Module -Name Microsoft.Graph.Groups # for some reason I can't add it as a requirement... sorry
 ```
 
 ## Import the module for testing

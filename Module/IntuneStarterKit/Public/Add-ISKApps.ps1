@@ -58,7 +58,7 @@ function Add-ISKApps {
     try{
 
         if($Path -like "https://github.com/*"){
-
+            Write-Verbose "Download files from GitHub: $Path"
             $Owner = $($Path.Replace("https://github.com/","")).Split("/")[0]
             $Repository = $($Path.Replace("https://github.com/$Owner/","")).Split("/")[0]
             $RepoPath = $($Path.Replace("https://github.com/$Owner/$Repository/tree/main/",""))
@@ -84,7 +84,7 @@ function Add-ISKApps {
         #>
         
         # Create Acces Token for MSIntuneGraph
-        Write-Verbose "Connect to MS Intune Enviroment via Connect-MSIntuneGraph"
+        Write-Verbose "Connect to MS Intune Enviroment via MsalToken"
         $Current_MgContext = Get-MgContext
         $Global:AccessToken = Get-MsalToken -ClientID $Current_MgContext.ClientId -TenantId $Current_MgContext.TenantId
 
@@ -93,13 +93,14 @@ function Add-ISKApps {
                     "Authorization" = $AccessToken.CreateAuthorizationHeader()
                     "ExpiresOn" = $AccessToken.ExpiresOn.LocalDateTime
                 }
-        Write-Verbose $Global:AuthenticationHeader 
-        
+        Write-Verbose "Token until: $($Global:AuthenticationHeader.ExpiresOn)"    
 
             
         $AllAppFolders = Get-ChildItem $PathLocal 
     
         foreach($AppFolder in $AllAppFolders){
+            Write-Verbose "Processing App: $($AppFolder.Name) "
+            
             # Read intunewin file
             $IntuneWinFile = (Get-ChildItem $AppFolder.FullName -Filter "*.intunewin").FullName
     
@@ -109,15 +110,24 @@ function Add-ISKApps {
             # Create PowerShell script detection rule
             $DetectionScriptFile = (Get-ChildItem $AppFolder.FullName -Filter "check.ps1").FullName
             $DetectionRule = New-IntuneWin32AppDetectionRuleScript -ScriptFile $DetectionScriptFile -EnforceSignatureCheck $false -RunAs32Bit $false
-    
-            # Add new EXE Win32 app
-            $InstallPS1 = (Get-ChildItem $AppFolder.FullName -Filter "*.intunewin").Name -replace(".intunewin","")
-            $InstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\$InstallPS1.ps1"
+            
+            # install command
+            $InstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\install.ps1"
             $UninstallCommandLine = "powershell.exe -ExecutionPolicy Bypass -File .\uninstall.ps1"
-            $AppUpload = Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
+
+            # check for png or jpg
+            $Icon_path = (Get-ChildItem "$($AppFolder.FullName)\*" -Include "*.jpg", "*.png" | Select-Object -First 1).FullName
+            if(!$Icon_path){
+                $AppUpload = Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
+            }else{
+                $Icon = New-IntuneWin32AppIcon -FilePath $Icon_path
+                $AppUpload = Add-IntuneWin32App -FilePath $IntuneWinFile -DisplayName $AppFolder.Name -Description $AppFolder.Name -Publisher $Publisher -InstallExperience "system" -Icon $Icon -RestartBehavior "suppress" -DetectionRule $DetectionRule -RequirementRule $RequirementRule -InstallCommandLine $InstallCommandLine -UninstallCommandLine $UninstallCommandLine
+            }
+                       
             Write-Verbose $AppUpload
 
             if($AppGroup){
+                Write-Verbose "Assign App $($AppFolder.Name) to $AssignTo"
                 $AppGrpName = "$AppGroupPrefix$($AppFolder.Name.replace(' ',''))"
                 $AppGroupObj = New-MgGroup -DisplayName $AppGrpName -Description "Installation of win32 app $($AppFolder.Name)" -MailEnabled:$false -SecurityEnabled:$true -MailNickname $($AppFolder.Name.replace(' ',''))
 
@@ -130,6 +140,8 @@ function Add-ISKApps {
                 $AppAssigmentRequest = Add-IntuneWin32AppAssignmentGroup -Include -ID $AppUpload.id -GroupID $AssignTo -Intent "required" -Notification "showAll"
                 Write-Verbose $AppAssigmentRequest
             }
+
+            Start-sleep -s 10
         }
 
         Write-Host "Apps imported: " -ForegroundColor Green

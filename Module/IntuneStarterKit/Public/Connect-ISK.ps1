@@ -15,7 +15,10 @@ function Connect-ISK {
 
 
     try{
-      
+        
+        # disconnect previous sessions
+        if(Get-MgContext){Disconnect-MgGraph} 
+
         #Connect-MgGraph -Scopes "User.Read.All","Group.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All"
         Connect-MgGraph 
 
@@ -32,6 +35,7 @@ function Connect-ISK {
                     "ExpiresOn" = $AccessToken.ExpiresOn.LocalDateTime
                 }
         Write-Verbose $Global:AuthenticationHeader 
+        #Connect-MSIntuneGraph -TenantID $(Get-MgContext).Tenantid | Out-Null
         
     }catch{
         Write-Error $_
