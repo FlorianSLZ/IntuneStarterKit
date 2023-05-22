@@ -19,7 +19,7 @@ function Connect-ISK {
         # disconnect previous sessions
         if(Get-MgContext){Disconnect-MgGraph} 
 
-        #Connect-MgGraph -Scopes "User.Read.All","Group.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All"
+        #Connect-MgGraph -Scopes "User.Read.All","Group.ReadWrite.All","DeviceManagementServiceConfig.ReadWrite.All","DeviceManagementApps.ReadWrite.All", "DeviceManagementConfiguration.ReadWrite.All", "DeviceManagementServiceConfig.ReadWrite.All"
         Connect-MgGraph 
 
         Connect-MSGraph -Quiet 
